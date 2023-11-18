@@ -4,34 +4,35 @@ namespace hello
 
 use alloy#simpleRestJson
 
+@documentation("An example service")
 @simpleRestJson
 service HelloWorldService {
   version: "1.0.0",
   operations: [Hello]
 }
 
-@documentation("This is the documentation of the Hello-operation")
+@documentation("Returns a greeting message to the given person")
 @http(method: "GET", uri: "/hello/{name}", code: 200)
 operation Hello {
   input: Person,
   output: Greeting
 }
 
-@documentation("This is the documentation of the Person-struct")
+@documentation("A person")
 structure Person {
-  @documentation("This is the documentation of the Person's name")
+  @documentation("The Person's name")
   @httpLabel
   @required
   name: String,
 
-  @documentation("This is the documentation of the Person's town")
+  @documentation("The town where the person is based")
   @httpQuery("town")
   town: String
 }
 
-@documentation("This is the documentation of the Greeting-struct")
+@documentation("A personalized greeting message")
 structure Greeting {
-  @documentation("This is the documentation of the Greeting's message")
+  @documentation("The actual message")
   @required
   message: String
 }
