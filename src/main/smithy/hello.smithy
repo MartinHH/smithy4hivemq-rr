@@ -4,7 +4,7 @@ namespace hello
 
 use alloy#simpleRestJson
 
-@documentation("An example service")
+@documentation("An example service: returns a greeting message")
 @simpleRestJson
 service HelloWorldService {
   version: "1.0.0",
@@ -13,6 +13,7 @@ service HelloWorldService {
 
 @documentation("Returns a greeting message to the given person")
 @http(method: "GET", uri: "/hello/{name}", code: 200)
+@readonly
 operation Hello {
   input: Person,
   output: Greeting
