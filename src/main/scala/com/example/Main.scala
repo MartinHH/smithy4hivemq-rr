@@ -20,14 +20,41 @@ object HelloWorldImpl extends HelloWorldService[IO] {
   }
 }
 
+class CountImpl(count: Ref[IO, Int]) extends CountService[IO] {
+  def modify(operator: MathOp, operand: Int): IO[Unit] = operator match {
+    case MathOp.DIV if operand == 0 => IO.raiseError(DivisionByZero(""))
+    case other => count.update(c => CountImpl.enumToOp(other)(c, operand))
+  }
+  def getCount(): IO[CurrentCount] = count.get.map(CurrentCount.apply)
+}
+
+object CountImpl {
+  private def enumToOp(mathOp: MathOp): (Int, Int) => Int = {
+    mathOp match
+      case MathOp.ADD => _ + _
+      case MathOp.SUB => _ - _
+      case MathOp.MUL => _ * _
+      case MathOp.DIV => _ / _
+  }
+}
+
 object Routes {
-  private val example: Resource[IO, HttpRoutes[IO]] =
+  private val helloWorld: Resource[IO, HttpRoutes[IO]] =
     SimpleRestJsonBuilder.routes(HelloWorldImpl).resource
 
-  private val docs: HttpRoutes[IO] =
-    smithy4s.http4s.swagger.docs[IO](HelloWorldService)
+  private val count: Resource[IO, HttpRoutes[IO]] =
+    Resource.eval(Ref.of[IO, Int](0)).flatMap { c =>
+      SimpleRestJsonBuilder.routes(CountImpl(c)).resource
+    }
 
-  val all: Resource[IO, HttpRoutes[IO]] = example.map(_ <+> docs)
+  private val docs: HttpRoutes[IO] =
+    smithy4s.http4s.swagger.docs[IO](HelloWorldService, CountService)
+
+  val all: Resource[IO, HttpRoutes[IO]] =
+    for {
+      hw <- helloWorld
+      c <- count
+    } yield hw <+> c <+> docs
 }
 
 object Main extends IOApp.Simple {
