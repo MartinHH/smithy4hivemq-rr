@@ -1,50 +1,33 @@
 package com.example
 
-import hello._
-import cats.syntax.all._
-import cats.effect._
-import cats.effect.syntax.all._
-import org.http4s.implicits._
-import org.http4s.ember.server._
-import org.http4s._
-import com.comcast.ip4s._
+import cats.effect.*
+import cats.syntax.all.*
+import com.comcast.ip4s.*
+import com.example.services.CountImpl
+import com.example.services.HelloWorldImpl
+import com.example.services.ThreadSafeVar
+import hello.CountService
+import hello.HelloWorldService
+import org.http4s.*
+import org.http4s.ember.server.*
+import org.http4s.implicits.*
 import smithy4s.http4s.SimpleRestJsonBuilder
-import scala.concurrent.duration._
 
-object HelloWorldImpl extends HelloWorldService[IO] {
-  def hello(name: String, town: Option[String]): IO[Greeting] = IO.pure {
-    town match {
-      case None    => Greeting(s"Hello " + name + "!")
-      case Some(t) => Greeting(s"Hello " + name + " from " + t + "!")
-    }
-  }
-}
+import scala.concurrent.duration.*
 
-class CountImpl(count: Ref[IO, Int]) extends CountService[IO] {
-  def modify(operator: MathOp, operand: Int): IO[Unit] = operator match {
-    case MathOp.DIV if operand == 0 => IO.raiseError(DivisionByZero(""))
-    case other => count.update(c => CountImpl.enumToOp(other)(c, operand))
-  }
-  def getCount(): IO[CurrentCount] = count.get.map(CurrentCount.apply)
-}
-
-object CountImpl {
-  private def enumToOp(mathOp: MathOp): (Int, Int) => Int = {
-    mathOp match
-      case MathOp.ADD => _ + _
-      case MathOp.SUB => _ - _
-      case MathOp.MUL => _ * _
-      case MathOp.DIV => _ / _
-  }
+/** Adapts [cats.effect.Ref] to our [ThreadSafeVar] */
+class RefAsThreadSafeVar[F[_], A](ref: Ref[F, A]) extends ThreadSafeVar[F, A] {
+  override def get: F[A] = ref.get
+  override def update(f: A => A): F[Unit] = ref.update(f)
 }
 
 object Routes {
   private val helloWorld: Resource[IO, HttpRoutes[IO]] =
-    SimpleRestJsonBuilder.routes(HelloWorldImpl).resource
+    SimpleRestJsonBuilder.routes(HelloWorldImpl[IO]()).resource
 
   private val count: Resource[IO, HttpRoutes[IO]] =
     Resource.eval(Ref.of[IO, Int](0)).flatMap { c =>
-      SimpleRestJsonBuilder.routes(CountImpl(c)).resource
+      SimpleRestJsonBuilder.routes(CountImpl(RefAsThreadSafeVar(c))).resource
     }
 
   private val docs: HttpRoutes[IO] =

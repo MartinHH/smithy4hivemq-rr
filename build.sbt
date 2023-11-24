@@ -7,7 +7,7 @@ ThisBuild / organizationName := "example"
 lazy val generated = (project in file("generated"))
   .enablePlugins(Smithy4sCodegenPlugin)
   .settings(
-    name := "smithy4s-generated",
+    name := "generated",
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %% "smithy4s-core" % smithy4sVersion.value
     ),
@@ -15,11 +15,24 @@ lazy val generated = (project in file("generated"))
     Compile / run / connectInput := true
   )
 
-// the http(4s) server
-lazy val http4s = (project in file("http4s"))
+// contains implementations of the generated service apis (i.e. the business logic),
+// still independent of any runtime or interpreter
+lazy val services = (project in file("services"))
   .dependsOn(generated)
   .settings(
-    name := "smithy4s-http4s",
+    name := "services",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % "2.10.0"
+    ),
+    Compile / run / fork := true,
+    Compile / run / connectInput := true
+  )
+
+// the http(4s) server
+lazy val http4s = (project in file("http4s"))
+  .dependsOn(services)
+  .settings(
+    name := "http4s",
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % smithy4sVersion.value,
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s-swagger" % smithy4sVersion.value,
