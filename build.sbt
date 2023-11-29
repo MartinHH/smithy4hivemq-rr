@@ -26,10 +26,10 @@ lazy val services = (project in file("services"))
   )
 
 // the http(4s) server
-lazy val http4s = (project in file("http4s"))
+lazy val http4sService = (project in file("http4s-service"))
   .dependsOn(services)
   .settings(
-    name := "http4s",
+    name := "http4s-service",
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % smithy4sVersion.value,
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s-swagger" % smithy4sVersion.value,
