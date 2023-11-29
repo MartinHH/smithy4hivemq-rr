@@ -21,9 +21,6 @@ lazy val services = (project in file("services"))
   .dependsOn(generated)
   .settings(
     name := "services",
-    libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "2.10.0"
-    ),
     Compile / run / fork := true,
     Compile / run / connectInput := true
   )

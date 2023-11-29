@@ -12,6 +12,7 @@ import org.http4s.*
 import org.http4s.ember.server.*
 import org.http4s.implicits.*
 import smithy4s.http4s.SimpleRestJsonBuilder
+import smithy4s.interopcats.monadThrowShim
 
 import scala.concurrent.duration.*
 

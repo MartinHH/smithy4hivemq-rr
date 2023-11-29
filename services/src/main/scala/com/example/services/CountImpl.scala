@@ -1,11 +1,10 @@
 package com.example.services
 
-import cats.ApplicativeError
-import cats.syntax.all.*
 import hello.CountService
 import hello.CurrentCount
 import hello.DivisionByZero
 import hello.MathOp
+import smithy4s.capability.MonadThrowLike
 
 /**
  * Some basic thread safe wrapper around state.
@@ -18,13 +17,13 @@ trait ThreadSafeVar[F[_], A] {
 }
 
 class CountImpl[F[_]](count: ThreadSafeVar[F, Int])(using
-  ae: ApplicativeError[F, Throwable]
+  F: MonadThrowLike[F]
 ) extends CountService[F] {
   def modify(operator: MathOp, operand: Int): F[Unit] = operator match {
-    case MathOp.DIV if operand == 0 => ae.raiseError(DivisionByZero(""))
+    case MathOp.DIV if operand == 0 => F.raiseError(DivisionByZero(""))
     case other => count.update(c => CountImpl.enumToOp(other)(c, operand))
   }
-  def getCount(): F[CurrentCount] = count.get.map(CurrentCount.apply)
+  def getCount(): F[CurrentCount] = F.map(count.get)(CurrentCount.apply)
 }
 
 object CountImpl {
