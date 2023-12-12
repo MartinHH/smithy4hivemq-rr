@@ -7,6 +7,7 @@ import cats.effect.kernel.Deferred
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter
 import com.hivemq.client.mqtt.datatypes.MqttTopic
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder
+import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck
 import io.gitub.mahh.mqtt.RequestHandlers
 import io.gitub.mahh.mqtt.logging.Logger
@@ -28,11 +29,16 @@ object HiveMqCatsResponder {
     val publishesFibre: Resource[IO, FiberIO[Unit]] =
       Deferred[IO, Either[Throwable, Unit]].toResource.flatMap { token =>
 
+        def handleRequest(msg: Mqtt5Publish): IO[Unit] =
+          HiveMqResponder
+            .handleRequest[IO](config, client.publish)(msg)
+            .recoverWith { case e =>
+              logger.error(e)("Caught unhandled error during request-handling")
+            }
+
         val publishes: IO[Unit] = client
           .publishes(MqttGlobalPublishFilter.ALL, 1)
-          .evalMap { msg =>
-            HiveMqResponder.handleRequest[IO](config, client.publish)(msg)
-          }
+          .evalMap(handleRequest)
           .interruptWhen(token)
           .compile
           .drain
