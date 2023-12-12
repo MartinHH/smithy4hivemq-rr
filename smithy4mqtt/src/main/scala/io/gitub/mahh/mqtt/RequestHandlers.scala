@@ -5,7 +5,10 @@ import io.gitub.mahh.mqtt.RequestHandlerBuilderError.DuplicateTopic
 import smithy4s.Blob
 
 /** Contains handler and related metadata for a single operation. */
-case class RequestHandlerConfig[F[_]](handler: Blob => F[Blob])
+case class RequestHandlerConfig[F[_]](
+    handler: Blob => F[Blob],
+    isReadOnly: Boolean
+)
 
 /** Contains handlers and related metadata for multiple request-topics. */
 sealed trait RequestHandlers[F[_], Topic] {

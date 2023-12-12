@@ -2,6 +2,7 @@ package io.gitub.mahh.mqtt
 
 import hello.mqtt.MqttRequest
 import io.gitub.mahh.mqtt.RequestHandlerBuilderError.InvalidTopic
+import smithy.api.Readonly
 import smithy4s.Blob
 import smithy4s.Endpoint
 import smithy4s.Service
@@ -16,15 +17,15 @@ import smithy4s.server.UnaryServerCodecs
 import smithy4s.server.UnaryServerEndpoint
 
 enum RequestHandlerBuilderError(msg: String) extends Throwable(msg) {
-  
+
   case DuplicateTopic(topic: String)
       extends RequestHandlerBuilderError(s"DuplicateTopic: $topic")
-  
+
   case MissingMqttRequest(endpoint: Endpoint[_, _, _, _, _, _])
       extends RequestHandlerBuilderError(
         s"Operation not annotated as MqttRequest: $endpoint"
       )
-  
+
   case InvalidTopic(topicString: String, detail: Option[Throwable])
       extends RequestHandlerBuilderError(s"Not a valid topic: $topicString")
 }
@@ -130,7 +131,8 @@ trait RequestServiceBuilder[Topic] {
         )
       val handlers: Map[Topic, RequestHandlerConfig[F]] =
         topics.map { case (t, ep) =>
-          t -> RequestHandlerConfig[F](makeRequestHandler(ep))
+          val isReadOnly = ep.hints.has[Readonly]
+          t -> RequestHandlerConfig[F](makeRequestHandler(ep), isReadOnly)
         }
       RequestHandlers[F, Topic](handlers)
     }

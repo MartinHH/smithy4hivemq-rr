@@ -64,11 +64,16 @@ object HiveMqResponder {
       }
     }
 
-    // TODO: (optimization) do not execute handler if responseTopic is empty
-    //   and operation is readonly
-    F.flatMap(handler.handler(request)) { resp =>
-      respond(resp)
+    if (responseTopic.isEmpty && handler.isReadOnly) {
+      logger.debug(
+        "Ignoring request without response-topic because operation is read-only"
+      )
+    } else {
+      F.flatMap(handler.handler(request)) { resp =>
+        respond(resp)
+      }
     }
+
   }
 
   def handleRequest[F[_]](
