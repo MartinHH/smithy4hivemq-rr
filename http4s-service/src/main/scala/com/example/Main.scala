@@ -5,30 +5,23 @@ import cats.syntax.all.*
 import com.comcast.ip4s.*
 import com.example.services.CountImpl
 import com.example.services.HelloWorldImpl
-import com.example.services.ThreadSafeVar
 import hello.CountService
 import hello.HelloWorldService
 import org.http4s.*
 import org.http4s.ember.server.*
 import org.http4s.implicits.*
 import smithy4s.http4s.SimpleRestJsonBuilder
-import smithy4s.interopcats.monadThrowShim
 
 import scala.concurrent.duration.*
 
-/** Adapts [cats.effect.Ref] to our [ThreadSafeVar] */
-class RefAsThreadSafeVar[F[_], A](ref: Ref[F, A]) extends ThreadSafeVar[F, A] {
-  override def get: F[A] = ref.get
-  override def update(f: A => A): F[Unit] = ref.update(f)
-}
 
 object Routes {
   private val helloWorld: Resource[IO, HttpRoutes[IO]] =
-    SimpleRestJsonBuilder.routes(HelloWorldImpl[IO]()).resource
+    SimpleRestJsonBuilder.routes(HelloWorldImpl()).resource
 
   private val count: Resource[IO, HttpRoutes[IO]] =
     Resource.eval(Ref.of[IO, Int](0)).flatMap { c =>
-      SimpleRestJsonBuilder.routes(CountImpl(RefAsThreadSafeVar(c))).resource
+      SimpleRestJsonBuilder.routes(CountImpl(c)).resource
     }
 
   private val docs: HttpRoutes[IO] =

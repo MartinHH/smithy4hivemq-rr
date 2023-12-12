@@ -3,6 +3,7 @@ $version: "2"
 namespace hello
 
 use alloy#simpleRestJson
+use hello.mqtt#mqttRequest
 
 @documentation("Another example service: providing a mutable \"counter\" state")
 @simpleRestJson
@@ -14,12 +15,14 @@ service CountService {
 @documentation("Returns the current value of the counter")
 @http(method: "GET", uri: "/value", code: 200)
 @readonly
+@mqttRequest(topic: "count/get")
 operation GetCount {
     output: CurrentCount
 }
 
 @documentation("Modifies the current value of the counter")
 @http(method: "POST", uri: "/value", code: 200)
+@mqttRequest(topic: "count/modify")
 operation Modify {
     input: ValueMod
     errors: [DivisionByZero]

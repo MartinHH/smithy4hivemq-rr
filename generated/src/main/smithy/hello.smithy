@@ -3,6 +3,7 @@ $version: "2"
 namespace hello
 
 use alloy#simpleRestJson
+use hello.mqtt#mqttRequest
 
 @documentation("An example service: returns a greeting message")
 @simpleRestJson
@@ -14,6 +15,7 @@ service HelloWorldService {
 @documentation("Returns a greeting message to the given person")
 @http(method: "GET", uri: "/hello/{name}", code: 200)
 @readonly
+@mqttRequest(topic: "hello")
 operation Hello {
   input: Person,
   output: Greeting
