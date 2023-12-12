@@ -8,6 +8,7 @@ import com.hivemq.client.mqtt.mqtt5.message.subscribe.Mqtt5Subscribe
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.Mqtt5Subscription
 import io.gitub.mahh.mqtt.RequestHandlerConfig
 import io.gitub.mahh.mqtt.RequestHandlers
+import io.gitub.mahh.mqtt.logging.Logger
 import smithy4s.Blob
 import smithy4s.capability.MonadThrowLike
 
@@ -43,9 +44,11 @@ object HiveMqResponder {
       correlationData: Option[Blob],
       qos: MqttQos,
       publish: Mqtt5Publish => F[Mqtt5PublishResult]
-  )(using F: MonadThrowLike[F]): F[Unit] = {
+  )(using F: MonadThrowLike[F], logger: Logger[F]): F[Unit] = {
     def respond(response: Blob) = {
-      responseTopic.fold(F.pure(())) { topic =>
+      responseTopic.fold(
+        logger.debug("Handled a request without response-topic")
+      ) { topic =>
         val msg = Mqtt5Publish
           .builder()
           .topic(topic)
@@ -54,7 +57,9 @@ object HiveMqResponder {
           .qos(qos)
           .build()
         F.flatMap(publish(msg)) { pr =>
-          pr.getError.toScala.fold(F.pure(()))(e => F.raiseError(e))
+          pr.getError.toScala.fold(
+            logger.debug("Successfully handled a request")
+          )(e => F.raiseError(e))
         }
       }
     }
@@ -69,7 +74,9 @@ object HiveMqResponder {
   def handleRequest[F[_]](
       config: RequestHandlers[F, MqttTopic],
       publish: Mqtt5Publish => F[Mqtt5PublishResult]
-  )(request: Mqtt5Publish)(using F: MonadThrowLike[F]): F[Unit] = {
+  )(
+      request: Mqtt5Publish
+  )(using F: MonadThrowLike[F], logger: Logger[F]): F[Unit] = {
     val topic = request.getTopic
     val handler: F[RequestHandlerConfig[F]] =
       config.handlers

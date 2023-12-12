@@ -9,6 +9,7 @@ import com.hivemq.client.mqtt.datatypes.MqttTopic
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck
 import io.gitub.mahh.mqtt.RequestHandlers
+import io.gitub.mahh.mqtt.logging.Logger
 import smithy4s.interopcats.monadThrowShim
 
 object HiveMqCatsResponder {
@@ -16,7 +17,7 @@ object HiveMqCatsResponder {
   def resource(
       config: RequestHandlers[IO, MqttTopic],
       clientBuilder: Mqtt5ClientBuilder
-  ): Resource[IO, Mqtt5SubAck] = {
+  )(using logger: Logger[IO]): Resource[IO, Mqtt5SubAck] = {
     val client = HiveMqCatsClient(clientBuilder.buildAsync())
 
     val subscribe: Resource[IO, Mqtt5SubAck] =

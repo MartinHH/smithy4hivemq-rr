@@ -3,6 +3,8 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.example"
 ThisBuild / organizationName := "example"
 
+lazy val log4catsVersion = "2.6.0"
+
 // mqtt-related smithy traits (and their generated scala representations)
 lazy val smithyMqtt = (project in file("smithy-mqtt"))
   .enablePlugins(Smithy4sCodegenPlugin)
@@ -48,7 +50,8 @@ lazy val smithy4hivemqCats = (project in file("smithy4hivemq-cats"))
     name := "smithy4hivemq-cats",
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %% "smithy4s-cats" % smithy4sVersion.value,
-      "co.fs2" %% "fs2-reactive-streams" % "3.9.2"
+      "co.fs2" %% "fs2-reactive-streams" % "3.9.2",
+      "org.typelevel" %% "log4cats-core" % log4catsVersion
     ),
     Compile / run / fork := true,
     Compile / run / connectInput := true
@@ -85,6 +88,10 @@ lazy val hivemqCatsService = (project in file("hivemq-cats-service"))
   .dependsOn(services, smithy4hivemqCats)
   .settings(
     name := "hivemq-cats-service",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
+      "ch.qos.logback" % "logback-classic" % "1.2.11"
+    ),
     Compile / run / fork := true,
     Compile / run / connectInput := true
   )

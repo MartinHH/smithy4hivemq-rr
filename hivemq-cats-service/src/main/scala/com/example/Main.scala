@@ -9,11 +9,16 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
 import io.gitub.mahh.mqtt.RequestHandlers
 import io.gitub.mahh.mqtt.hive.HiveMqCatsResponder
 import io.gitub.mahh.mqtt.hive.HiveMqRequestServiceBuilder
+import io.gitub.mahh.mqtt.logging.log4cats.loggingFromLog4Cats
+import org.typelevel.log4cats.Logger as Log4CatsLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import smithy4s.interopcats.monadThrowShim
 
 object Main extends IOApp.Simple {
 
   val run: IO[Unit] = {
+
+    given Log4CatsLogger[IO] = Slf4jLogger.getLogger[IO]
 
     val config: IO[RequestHandlers[IO, MqttTopic]] =
       for {
