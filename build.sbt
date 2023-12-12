@@ -90,7 +90,7 @@ lazy val hivemqCatsService = (project in file("hivemq-cats-service"))
     name := "hivemq-cats-service",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
-      "ch.qos.logback" % "logback-classic" % "1.2.11"
+      "ch.qos.logback" % "logback-classic" % "1.4.7"
     ),
     Compile / run / fork := true,
     Compile / run / connectInput := true
@@ -104,7 +104,7 @@ lazy val http4sService = (project in file("http4s-service"))
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % smithy4sVersion.value,
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s-swagger" % smithy4sVersion.value,
-      "org.http4s" %% "http4s-ember-server" % "0.23.16"
+      "org.http4s" %% "http4s-ember-server" % "0.23.18"
     ),
     Compile / run / fork := true,
     Compile / run / connectInput := true
