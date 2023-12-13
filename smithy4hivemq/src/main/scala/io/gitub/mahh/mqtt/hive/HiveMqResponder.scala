@@ -87,21 +87,16 @@ object HiveMqResponder {
       config.handlers
         .get(topic)
         .fold(F.raiseError(Error.UnexpectedTopic(topic)))(h => F.pure(h))
-    val payload: F[ByteBuffer] =
-      request.getPayload.toScala.fold(F.raiseError(Error.EmptyPayload))(pl =>
-        F.pure(pl)
-      )
     F.flatMap(handler) { h =>
-      F.flatMap(payload) { pl =>
-        executeRequest(
-          Blob(pl),
-          h,
-          request.getResponseTopic.toScala,
-          request.getCorrelationData.toScala.map(Blob.apply),
-          request.getQos,
-          publish
-        )
-      }
+      val payload = request.getPayload.toScala.fold(Blob.empty)(Blob.apply)
+      executeRequest(
+        payload,
+        h,
+        request.getResponseTopic.toScala,
+        request.getCorrelationData.toScala.map(Blob.apply),
+        request.getQos,
+        publish
+      )
     }
   }
 
