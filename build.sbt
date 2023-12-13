@@ -59,11 +59,11 @@ lazy val smithy4hivemqCats = (project in file("smithy4hivemq-cats"))
 
 // smithy-files and generated code for some example services
 // (annotated for both http and mqtt)
-lazy val generated = (project in file("generated"))
+lazy val exampleGeneratedServices = (project in file("example-generated-services"))
   .enablePlugins(Smithy4sCodegenPlugin)
   .dependsOn(smithyMqtt)
   .settings(
-    name := "generated",
+    name := "example-generated-services",
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %% "smithy4s-core" % smithy4sVersion.value
     ),
@@ -72,10 +72,10 @@ lazy val generated = (project in file("generated"))
   )
 
 // contains implementations of the generated service apis (i.e. the business logic)
-lazy val services = (project in file("services"))
-  .dependsOn(generated)
+lazy val exampleServices = (project in file("example-services"))
+  .dependsOn(exampleGeneratedServices)
   .settings(
-    name := "services",
+    name := "example-services",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-effect" % "3.5.1"
     ),
@@ -84,10 +84,10 @@ lazy val services = (project in file("services"))
   )
 
 // an mqtt client hosting the generated services
-lazy val hivemqCatsService = (project in file("hivemq-cats-service"))
-  .dependsOn(services, smithy4hivemqCats)
+lazy val exampleHiveMqServer = (project in file("example-hivemq-server"))
+  .dependsOn(exampleServices, smithy4hivemqCats)
   .settings(
-    name := "hivemq-cats-service",
+    name := "example-hivemq-server",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
       "ch.qos.logback" % "logback-classic" % "1.4.7"
@@ -97,10 +97,10 @@ lazy val hivemqCatsService = (project in file("hivemq-cats-service"))
   )
 
 // an http(4s) server hosting the generated services
-lazy val http4sService = (project in file("http4s-service"))
-  .dependsOn(services)
+lazy val exampleHttp4sServer = (project in file("example-http4s-server"))
+  .dependsOn(exampleServices)
   .settings(
-    name := "http4s-service",
+    name := "example-http4s-server",
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % smithy4sVersion.value,
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s-swagger" % smithy4sVersion.value,
