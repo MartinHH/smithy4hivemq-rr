@@ -4,6 +4,7 @@ ThisBuild / organization := "com.example"
 ThisBuild / organizationName := "example"
 
 lazy val log4catsVersion = "2.6.0"
+lazy val logbackVersion = "1.4.7"
 
 // mqtt-related smithy traits (and their generated scala representations)
 lazy val smithyMqtt = (project in file("smithy-mqtt"))
@@ -90,7 +91,7 @@ lazy val exampleHiveMqServer = (project in file("example-hivemq-server"))
     name := "example-hivemq-server",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
-      "ch.qos.logback" % "logback-classic" % "1.4.7"
+      "ch.qos.logback" % "logback-classic" % logbackVersion
     ),
     Compile / run / fork := true,
     Compile / run / connectInput := true
@@ -104,8 +105,18 @@ lazy val exampleHttp4sServer = (project in file("example-http4s-server"))
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % smithy4sVersion.value,
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s-swagger" % smithy4sVersion.value,
-      "org.http4s" %% "http4s-ember-server" % "0.23.18"
+      "org.http4s" %% "http4s-ember-server" % "0.23.18",
+      "ch.qos.logback" % "logback-classic" % logbackVersion
     ),
+    Compile / run / fork := true,
+    Compile / run / connectInput := true
+  )
+
+// combined http(4s) server and mqtt client hosting the generated services
+lazy val exampleCombinedServer = (project in file("example-combined-server"))
+  .dependsOn(exampleHiveMqServer, exampleHttp4sServer)
+  .settings(
+    name := "example-combined-server",
     Compile / run / fork := true,
     Compile / run / connectInput := true
   )
