@@ -7,13 +7,8 @@ import smithy4s.Blob
 import smithy4s.Endpoint
 import smithy4s.Service
 import smithy4s.capability.MonadThrowLike
-import smithy4s.codecs.PayloadDecoder
-import smithy4s.codecs.PayloadEncoder
-import smithy4s.codecs.PayloadError
 import smithy4s.json.Json
 import smithy4s.kinds.*
-import smithy4s.schema.OperationSchema
-import smithy4s.server.UnaryServerCodecs
 import smithy4s.server.UnaryServerEndpoint
 
 enum RequestHandlerBuilderError(msg: String) extends Throwable(msg) {
@@ -42,47 +37,6 @@ trait RequestServiceBuilder[Topic] {
   import RequestServiceBuilder.Result
 
   protected def parseTopic(topicString: String): Either[InvalidTopic, Topic]
-
-  private def makeServerCodecs[F[_], I, E, O](
-      schema: OperationSchema[I, E, O, _, _]
-  )(implicit
-      F: MonadThrowLike[F]
-  ): UnaryServerCodecs[F, Blob, Blob, I, E, O] = {
-    val iDec: PayloadDecoder[I] =
-      Json.payloadCodecs.decoders.fromSchema(schema.input)
-    val eEnc: Option[PayloadEncoder[E]] =
-      schema.error.map { e =>
-        JsonRpcStyleResultEncoding.Error.encoder(e, Json.payloadCodecs.encoders)
-      }
-    val oEnc: PayloadEncoder[O] =
-      JsonRpcStyleResultEncoding.Success.encoder(
-        schema.output,
-        Json.payloadCodecs.encoders
-      )
-    val throwableEnc: PayloadEncoder[Throwable] =
-      JsonRpcStyleResultEncoding.Error.throwableEncoder(
-        Json.payloadCodecs.encoders
-      )
-    val payloadErrorEnc: PayloadEncoder[PayloadError] =
-      JsonRpcStyleResultEncoding.Error.encoder(
-        PayloadError.schema,
-        identity,
-        _ => 400,
-        Json.payloadCodecs.encoders
-      )
-
-    UnaryServerCodecs[F, Blob, Blob, I, E, O](
-      in => F.liftEither(iDec.decode(in)),
-      eEnc.fold[E => F[Blob]] { e =>
-        F.raiseError(new NoSuchElementException(s"no error encoder for $e"))
-      } { (enc: PayloadEncoder[E]) => (e: E) => F.pure(enc.encode(e)) },
-      {
-        case pe: PayloadError => F.pure(payloadErrorEnc.encode(pe))
-        case t                => F.pure(throwableEnc.encode(t))
-      },
-      o => F.pure(oEnc.encode(o))
-    )
-  }
 
   private def extractAndValidateTopics[Alg[_[_, _, _, _, _]]](
       service: Service[Alg]
@@ -120,13 +74,18 @@ trait RequestServiceBuilder[Topic] {
       val interpreter: FunctorInterpreter[service.Operation, F] =
         service.toPolyFunction[smithy4s.kinds.Kind1[F]#toKind5](impl)
 
+      val makeCodecs = JsonRpcStyleResultEncoding.makeServerCodecs[F](
+        Json.payloadCodecs.encoders,
+        Json.payloadCodecs.decoders
+      )
+
       def makeRequestHandler[I, E, O, SI, SO](
           endpoint: Endpoint[service.Operation, I, E, O, SI, SO]
       ): Blob => F[Blob] =
         UnaryServerEndpoint(
           interpreter,
           endpoint,
-          codecs = makeServerCodecs(endpoint.schema),
+          codecs = makeCodecs(endpoint.schema),
           middleware = identity
         )
       val handlers: Map[Topic, RequestHandlerConfig[F]] =
