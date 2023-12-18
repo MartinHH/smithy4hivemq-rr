@@ -38,7 +38,7 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
   ): Result[service.Impl[BlockingResult]] = {
     makeClient[Alg, BlockingResult, RequestClient](
       service,
-      RequestClient(clientBuilder: Mqtt5ClientBuilder),
+      RequestClient(clientBuilder),
       _.toBlockingSmithy4sSyncClient(
         timeout,
         qos,
@@ -77,10 +77,20 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
     subscribe -> req
   }
 
-  private case class RequestClient(
+  private[hive] case class RequestClient(
       clientBuilder: Mqtt5ClientBuilder,
       topic: Option[String] = None
   ) {
+
+    def topicResult: BlockingResult[MqttTopic] =
+      topic.fold[BlockingResult[MqttTopic]] {
+        // should be unreachable if called from makeClient
+        Left(IllegalStateException("run called without topic"))
+      }(parseHiveMqTopic)
+
+    def randomIdClientBuilder: Mqtt5ClientBuilder =
+      clientBuilder
+        .identifier(s"FutureClient-${UUID.randomUUID()}")
 
     def toBlockingSmithy4sSyncClient(
         timeout: Duration,
@@ -93,17 +103,12 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
         )(
             responseCB: Blob => BlockingResult[Output]
         ): BlockingResult[Output] = {
-          val topicResult: BlockingResult[MqttTopic] =
-            topic.fold[BlockingResult[MqttTopic]] {
-              // should be unreachable
-              Left(IllegalStateException("run called without topic"))
-            }(parseHiveMqTopic)
 
           topicResult.flatMap { t =>
             val responseTopic = createResponseTopic(t)
-            val client = clientBuilder
-              .identifier(s"FutureClient-${UUID.randomUUID()}")
-              .buildBlocking()
+            val client =
+              randomIdClientBuilder
+                .buildBlocking()
 
             val (subscribe, msg) =
               subscribeAndRequest(qos, t, responseTopic, request)

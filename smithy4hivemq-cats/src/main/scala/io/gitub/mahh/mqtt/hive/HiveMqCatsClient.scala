@@ -10,7 +10,8 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.Mqtt5Subscribe
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck
 import fs2.*
-import fs2.interop.reactivestreams.*
+import fs2.interop.flow.fromPublisher
+import org.reactivestreams.FlowAdapters
 
 class HiveMqCatsClient(private val underlying: Mqtt5AsyncClient)
     extends AnyVal {
@@ -29,9 +30,17 @@ class HiveMqCatsClient(private val underlying: Mqtt5AsyncClient)
 
   def publishes(
       filter: MqttGlobalPublishFilter,
-      bufferSize: Int = 16
-  ): Stream[IO, Mqtt5Publish] =
-    underlying.toRx.publishes(filter).toStreamBuffered(bufferSize)
+    onSubscribe: IO[Unit] = IO.unit,
+    bufferSize: Int = 1
+  ): Stream[IO, Mqtt5Publish] = {
+    fromPublisher(bufferSize) { subscriber =>
+      IO.delay {
+        underlying.toRx
+          .publishes(filter)
+          .subscribe(FlowAdapters.toSubscriber(subscriber))
+      } >> onSubscribe
+    }
+  }
 
   def subscribe(subscribe: Mqtt5Subscribe): IO[Mqtt5SubAck] =
     IO.fromCompletableFuture(IO(underlying.subscribe(subscribe)))

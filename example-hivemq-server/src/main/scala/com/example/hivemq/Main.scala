@@ -25,7 +25,7 @@ object Main extends IOApp.Simple {
     helloWorldService: HelloWorldService[IO],
     countService: CountService[IO],
       clientBuilder: Mqtt5ClientBuilder
-  )(using Logger[IO]): Resource[IO, Mqtt5SubAck] = {
+  )(using Logger[IO]): Resource[IO, FiberIO[Unit]] = {
     val config: IO[RequestHandlers[IO, MqttTopic]] =
       for {
         hw <- HiveMqRequestServiceBuilder.handlers(helloWorldService).liftTo[IO]
@@ -34,8 +34,8 @@ object Main extends IOApp.Simple {
       } yield combined
     for {
       conf <- config.toResource
-      responder <- HiveMqCatsResponder.resource(conf, clientBuilder)
-    } yield responder
+      fibre <- HiveMqCatsResponder.resource(conf, clientBuilder)
+    } yield fibre
   }
 
   val run: IO[Unit] = {
@@ -48,7 +48,7 @@ object Main extends IOApp.Simple {
         .serverHost("localhost")
         .serverPort(1883)
 
-    val responder: Resource[IO, Mqtt5SubAck] =
+    val responder: Resource[IO, FiberIO[Unit]] =
       for {
         counter <- Ref.of[IO, Int](0).toResource
         helloWorldService = HelloWorldImpl()
@@ -60,8 +60,8 @@ object Main extends IOApp.Simple {
       IO.println("Service started - press enter to abort")
 
     responder
-      .productL(printStarted.toResource)
-      .surround(IO.readLine)
+      .use(_.join)
+      .race(printStarted >> IO.readLine)
       .void
       .guarantee(IO.println("Goodbye!"))
   }
