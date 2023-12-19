@@ -20,7 +20,6 @@ import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.Promise
 import scala.concurrent.duration.Duration
-import scala.jdk.OptionConverters.*
 import scala.util.Try
 
 object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
@@ -136,8 +135,7 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
             client.disconnect()
 
             received.flatMap { publish =>
-              val blob = publish.getPayload.toScala.fold(Blob.empty)(Blob.apply)
-              responseCB(blob)
+              responseCB(publish.payloadBlob)
             }
           }
 

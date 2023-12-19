@@ -7,6 +7,7 @@ import com.hivemq.client.mqtt.datatypes.MqttTopic
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult
 import io.gitub.mahh.mqtt.RequestServiceBuilder
+import io.gitub.mahh.mqtt.hive.*
 import io.gitub.mahh.mqtt.hive.HiveMqRequestClientBuilder.RequestClient
 import io.gitub.mahh.mqtt.hive.HiveMqRequestClientBuilder.subscribeAndRequest
 import smithy4s.Blob
@@ -14,7 +15,6 @@ import smithy4s.capability.MonadThrowLike
 import smithy4s.client.UnaryLowLevelClient
 
 import scala.concurrent.duration.FiniteDuration
-import scala.jdk.OptionConverters.*
 
 object HiveMqCatsRequestClientBuilder {
 
@@ -42,7 +42,7 @@ object HiveMqCatsRequestClientBuilder {
             .collectFirst {
               // TODO: correlation data
               case r if r.getTopic == responseTopic =>
-                r.getPayload.toScala.fold(Blob.empty)(Blob.apply)
+                r.payloadBlob
             }
             .evalMap(responseCB)
             .timeout(timeout)

@@ -12,8 +12,6 @@ import io.gitub.mahh.mqtt.logging.Logger
 import smithy4s.Blob
 import smithy4s.capability.MonadThrowLike
 
-import java.nio.ByteBuffer
-import scala.jdk.OptionConverters.*
 
 object HiveMqResponder {
 
@@ -57,7 +55,7 @@ object HiveMqResponder {
           .qos(qos)
           .build()
         F.flatMap(publish(msg)) { pr =>
-          pr.getError.toScala.fold(
+          pr.error.fold(
             logger.debug("Successfully handled a request")
           )(e => F.raiseError(e))
         }
@@ -88,12 +86,11 @@ object HiveMqResponder {
         .get(topic)
         .fold(F.raiseError(Error.UnexpectedTopic(topic)))(h => F.pure(h))
     F.flatMap(handler) { h =>
-      val payload = request.getPayload.toScala.fold(Blob.empty)(Blob.apply)
       executeRequest(
-        payload,
+        request.payloadBlob,
         h,
-        request.getResponseTopic.toScala,
-        request.getCorrelationData.toScala.map(Blob.apply),
+        request.responseTopic,
+        request.correlationData,
         request.getQos,
         publish
       )
