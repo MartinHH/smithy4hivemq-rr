@@ -1,7 +1,6 @@
 package io.gitub.mahh.mqtt.hive
 
 import cats.effect.IO
-import cats.effect.Resource
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck
@@ -22,11 +21,11 @@ class HiveMqCatsClient(private val underlying: Mqtt5AsyncClient)
   def disconnect: IO[Unit] =
     IO.fromCompletableFuture(IO(underlying.disconnect())).void
 
-  def connectedResource: Resource[IO, Mqtt5ConnAck] =
-    Resource.make(connect)(_ => disconnect)
-
   def publish(publish: Mqtt5Publish): IO[Mqtt5PublishResult] =
     IO.fromCompletableFuture(IO(underlying.publish(publish)))
+
+  def subscribe(subscribe: Mqtt5Subscribe): IO[Mqtt5SubAck] =
+    IO.fromCompletableFuture(IO(underlying.subscribe(subscribe)))
 
   def publishes(
       filter: MqttGlobalPublishFilter,
@@ -41,8 +40,5 @@ class HiveMqCatsClient(private val underlying: Mqtt5AsyncClient)
       } >> onSubscribe
     }
   }
-
-  def subscribe(subscribe: Mqtt5Subscribe): IO[Mqtt5SubAck] =
-    IO.fromCompletableFuture(IO(underlying.subscribe(subscribe)))
 
 }
