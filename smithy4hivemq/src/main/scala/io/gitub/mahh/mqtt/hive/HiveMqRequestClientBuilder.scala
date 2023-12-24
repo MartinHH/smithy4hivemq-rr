@@ -9,10 +9,8 @@ import com.hivemq.client.mqtt.mqtt5.message.subscribe.Mqtt5Subscribe
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.Mqtt5Subscription
 import io.gitub.mahh.mqtt.RequestClientBuilder
 import io.gitub.mahh.mqtt.RequestHandlerBuilderError
-import io.gitub.mahh.mqtt.RequestServiceBuilder.Result
 import io.reactivex.disposables.Disposable
 import smithy4s.Blob
-import smithy4s.Service
 import smithy4s.capability.MonadThrowLike
 import smithy4s.client.UnaryLowLevelClient
 
@@ -26,17 +24,15 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
 
   type BlockingResult[T] = Either[Throwable, T]
 
-  def blocking[Alg[_[_, _, _, _, _]]](
-      service: smithy4s.Service[Alg],
+  def makeBlocking(
       clientBuilder: Mqtt5ClientBuilder,
       qos: MqttQos,
       timeout: Duration,
       createResponseTopic: MqttTopic => MqttTopic = _ => MqttTopic.of("foo/bar")
   )(using
       MonadThrowLike[BlockingResult]
-  ): Result[service.Impl[BlockingResult]] = {
-    makeClient[Alg, BlockingResult, RequestClient](
-      service,
+  ): Make[BlockingResult] =
+    make(
       RequestClient(clientBuilder),
       _.toBlockingSmithy4sSyncClient(
         timeout,
@@ -45,7 +41,6 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
       ),
       (c, t) => c.copy(topic = t)
     )
-  }
 
   def subscribeAndRequest(
       qos: MqttQos,

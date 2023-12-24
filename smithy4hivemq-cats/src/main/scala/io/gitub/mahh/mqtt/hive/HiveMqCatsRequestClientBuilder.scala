@@ -78,20 +78,16 @@ object HiveMqCatsRequestClientBuilder {
       }
     }
 
-  def build[Alg[_[_, _, _, _, _]]](
-      service: smithy4s.Service[Alg],
+  def make(
       clientBuilder: Mqtt5ClientBuilder,
       qos: MqttQos,
       timeout: FiniteDuration,
       createResponseTopic: MqttTopic => MqttTopic = _ => MqttTopic.of("foo/bar")
   )(using
       MonadThrowLike[IO]
-  ): RequestServiceBuilder.Result[service.Impl[IO]] = {
-    HiveMqRequestClientBuilder.makeClient[Alg, IO, RequestClient](
-      service,
-      RequestClient(clientBuilder),
-      toIOSmity4sClient(timeout, qos, createResponseTopic),
-      (c, t) => c.copy(topic = t)
-    )
-  }
+  ): HiveMqRequestClientBuilder.Make[IO] = HiveMqRequestClientBuilder.make(
+    RequestClient(clientBuilder),
+    toIOSmity4sClient(timeout, qos, createResponseTopic),
+    (c, t) => c.copy(topic = t)
+  )
 }

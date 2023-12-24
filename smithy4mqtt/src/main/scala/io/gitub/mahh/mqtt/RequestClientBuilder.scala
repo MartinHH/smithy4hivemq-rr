@@ -3,15 +3,23 @@ package io.gitub.mahh.mqtt
 import hello.mqtt.MqttRequest
 import io.gitub.mahh.mqtt.RequestHandlerBuilderError.InvalidTopic
 import io.gitub.mahh.mqtt.RequestHandlerBuilderError.MissingMqttRequest
+import io.gitub.mahh.mqtt.RequestServiceBuilder.Result
 import smithy4s.Blob
 import smithy4s.Endpoint
 import smithy4s.Hints
+import smithy4s.Service
 import smithy4s.capability.MonadThrowLike
 import smithy4s.client.UnaryClientCompiler
 import smithy4s.client.UnaryLowLevelClient
 import smithy4s.json.Json
 
 trait RequestClientBuilder[Topic] {
+
+  trait Make[F[_]] {
+    def apply[Alg[_[_, _, _, _, _]]](
+      service: smithy4s.Service[Alg]
+    ): RequestServiceBuilder.Result[service.Impl[F]]
+  }
 
   protected def parseTopic(topicString: String): Either[InvalidTopic, Topic]
 
@@ -67,17 +75,21 @@ trait RequestClientBuilder[Topic] {
 
   }
 
-  def makeClient[Alg[_[_, _, _, _, _]], F[_], Client](
-      service: smithy4s.Service[Alg],
+  def make[F[_], Client](
       client: Client,
       toSmithy4sClient: Client => UnaryLowLevelClient[F, Blob, Blob],
       setTopic: (Client, Option[String]) => Client
   )(implicit
       F: MonadThrowLike[F]
-  ): RequestServiceBuilder.Result[service.Impl[F]] = {
-    makeCompiler(service, client, toSmithy4sClient, setTopic).map { compiler =>
-      service.impl(compiler)
+  ): Make[F] =
+    new Make[F] {
+      override def apply[Alg[_[_, _, _, _, _]]](
+        service: Service[Alg]
+      ): Result[service.Impl[F]] = {
+        makeCompiler(service, client, toSmithy4sClient, setTopic).map {
+          compiler =>
+            service.impl(compiler)
+        }
+      }
     }
-  }
-
 }
