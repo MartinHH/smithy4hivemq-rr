@@ -24,11 +24,16 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
 
   type BlockingResult[T] = Either[Throwable, T]
 
+  val defaultCorrelationDataProvider: () => Blob = () =>
+    Blob(UUID.randomUUID().toString)
+
   def makeBlocking(
       clientBuilder: Mqtt5ClientBuilder,
       qos: MqttQos,
       timeout: Duration,
-      createResponseTopic: MqttTopic => MqttTopic = _ => MqttTopic.of("foo/bar")
+    createResponseTopic: MqttTopic => MqttTopic = _ =>
+      MqttTopic.of("foo/bar"),
+    correlationDataProvider: () => Blob = defaultCorrelationDataProvider
   )(using
       MonadThrowLike[BlockingResult]
   ): Make[BlockingResult] =
@@ -37,7 +42,8 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
       _.toBlockingSmithy4sSyncClient(
         timeout,
         qos,
-        createResponseTopic
+        createResponseTopic,
+        correlationDataProvider
       ),
       (c, t) => c.copy(topic = t)
     )
@@ -46,7 +52,8 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
       qos: MqttQos,
       requestTopic: MqttTopic,
       responseTopic: MqttTopic,
-      requestPayload: Blob
+    requestPayload: Blob,
+    correlationData: Blob
   ): (Mqtt5Subscribe, Mqtt5Publish) = {
     val subscribe = {
       val subscr =
@@ -65,6 +72,7 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
       .topic(requestTopic)
       .payload(requestPayload.asByteBuffer)
       .responseTopic(responseTopic)
+      .correlationData(correlationData.asByteBuffer)
       .qos(qos)
       .build()
 
@@ -89,7 +97,8 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
     def toBlockingSmithy4sSyncClient(
         timeout: Duration,
         qos: MqttQos,
-        createResponseTopic: MqttTopic => MqttTopic
+      createResponseTopic: MqttTopic => MqttTopic,
+      correlationDataProvider: () => Blob
     ): UnaryLowLevelClient[BlockingResult, Blob, Blob] =
       new UnaryLowLevelClient[BlockingResult, Blob, Blob] {
         override def run[Output](
@@ -104,8 +113,15 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
               randomIdClientBuilder
                 .buildBlocking()
 
+            val correlationData = correlationDataProvider()
             val (subscribe, msg) =
-              subscribeAndRequest(qos, t, responseTopic, request)
+              subscribeAndRequest(
+                qos,
+                t,
+                responseTopic,
+                request,
+                correlationData
+              )
 
             val p: Promise[Mqtt5Publish] = Promise()
 
@@ -113,8 +129,7 @@ object HiveMqRequestClientBuilder extends RequestClientBuilder[MqttTopic] {
               .publishes(MqttGlobalPublishFilter.SUBSCRIBED)
               .subscribe(
                 (publish: Mqtt5Publish) => {
-                  // TODO: correlation data
-                  if (publish.getTopic == responseTopic) {
+                  if (publish.isResponse(responseTopic, correlationData)) {
                     p.trySuccess(publish)
                   }
                 },

@@ -6,7 +6,6 @@ import com.hivemq.client.mqtt.datatypes.MqttQos
 import com.hivemq.client.mqtt.datatypes.MqttTopic
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult
-import io.gitub.mahh.mqtt.RequestServiceBuilder
 import io.gitub.mahh.mqtt.hive.*
 import io.gitub.mahh.mqtt.hive.HiveMqRequestClientBuilder.RequestClient
 import io.gitub.mahh.mqtt.hive.HiveMqRequestClientBuilder.subscribeAndRequest
@@ -21,7 +20,8 @@ object HiveMqCatsRequestClientBuilder {
   private def toIOSmithy4sClient(
       timeout: FiniteDuration,
       qos: MqttQos,
-      createResponseTopic: MqttTopic => MqttTopic
+    createResponseTopic: MqttTopic => MqttTopic,
+    correlationDataProvider: () => Blob
   )(
       requestClient: RequestClient
   ): UnaryLowLevelClient[IO, Blob, Blob] =
@@ -33,6 +33,8 @@ object HiveMqCatsRequestClientBuilder {
         val client =
           HiveMqCatsClient(requestClient.randomIdClientBuilder.buildAsync())
 
+        val correlationData = correlationDataProvider()
+
         def response(
             responseTopic: MqttTopic,
             sendRequest: IO[Unit]
@@ -40,8 +42,7 @@ object HiveMqCatsRequestClientBuilder {
           client
             .publishes(MqttGlobalPublishFilter.SUBSCRIBED, sendRequest)
             .collectFirst {
-              // TODO: correlation data
-              case r if r.getTopic == responseTopic =>
+              case r if r.isResponse(responseTopic, correlationData) =>
                 r.payloadBlob
             }
             .evalMap(responseCB)
@@ -58,7 +59,8 @@ object HiveMqCatsRequestClientBuilder {
               qos,
               requestTopic,
               responseTopic,
-              request
+              request,
+              correlationData
             )
           for {
             _ <- client.connect
@@ -82,12 +84,20 @@ object HiveMqCatsRequestClientBuilder {
       clientBuilder: Mqtt5ClientBuilder,
       qos: MqttQos,
       timeout: FiniteDuration,
-      createResponseTopic: MqttTopic => MqttTopic = _ => MqttTopic.of("foo/bar")
+    createResponseTopic: MqttTopic => MqttTopic = _ =>
+      MqttTopic.of("foo/bar"),
+    correlationDataProvider: () => Blob =
+    HiveMqRequestClientBuilder.defaultCorrelationDataProvider
   )(using
       MonadThrowLike[IO]
   ): HiveMqRequestClientBuilder.Make[IO] = HiveMqRequestClientBuilder.make(
     RequestClient(clientBuilder),
-    toIOSmithy4sClient(timeout, qos, createResponseTopic),
+    toIOSmithy4sClient(
+      timeout,
+      qos,
+      createResponseTopic,
+      correlationDataProvider
+    ),
     (c, t) => c.copy(topic = t)
   )
 }

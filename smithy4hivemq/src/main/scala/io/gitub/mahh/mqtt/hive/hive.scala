@@ -26,5 +26,9 @@ extension (publish: Mqtt5Publish)
   def correlationData: Option[Blob] =
     publish.getCorrelationData.toScala.map(Blob.apply)
 
+  def isResponse(responseTopic: MqttTopic, correlationData: Blob): Boolean =
+    publish.getTopic == responseTopic &&
+      publish.correlationData.exists(_.sameBytesAs(correlationData))
+
 extension (publishResult: Mqtt5PublishResult)
   def error: Option[Throwable] = publishResult.getError.toScala
