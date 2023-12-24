@@ -18,7 +18,7 @@ import scala.concurrent.duration.FiniteDuration
 
 object HiveMqCatsRequestClientBuilder {
 
-  private def toIOSmity4sClient(
+  private def toIOSmithy4sClient(
       timeout: FiniteDuration,
       qos: MqttQos,
       createResponseTopic: MqttTopic => MqttTopic
@@ -87,7 +87,7 @@ object HiveMqCatsRequestClientBuilder {
       MonadThrowLike[IO]
   ): HiveMqRequestClientBuilder.Make[IO] = HiveMqRequestClientBuilder.make(
     RequestClient(clientBuilder),
-    toIOSmity4sClient(timeout, qos, createResponseTopic),
+    toIOSmithy4sClient(timeout, qos, createResponseTopic),
     (c, t) => c.copy(topic = t)
   )
 }
