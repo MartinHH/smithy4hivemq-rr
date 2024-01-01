@@ -7,7 +7,6 @@ import com.example.services.HelloWorldImpl
 import com.hivemq.client.mqtt.datatypes.MqttTopic
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder
-import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck
 import hello.CountService
 import hello.HelloWorldService
 import io.gitub.mahh.mqtt.RequestHandlers

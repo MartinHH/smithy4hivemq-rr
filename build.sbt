@@ -4,7 +4,8 @@ ThisBuild / organization := "com.example"
 ThisBuild / organizationName := "example"
 
 lazy val log4catsVersion = "2.6.0"
-lazy val logbackVersion = "1.4.7"
+lazy val logbackVersion = "1.4.12"
+lazy val http4sVersion = "0.23.18"
 
 // mqtt-related smithy traits (and their generated scala representations)
 lazy val smithyMqtt = (project in file("smithy-mqtt"))
@@ -58,6 +59,17 @@ lazy val smithy4hivemqCats = (project in file("smithy4hivemq-cats"))
     Compile / run / connectInput := true
   )
 
+lazy val smithy4hivemqAdapters = (project in file("smithy4hivemq-adapters"))
+  .dependsOn(smithy4hivemq)
+  .settings(
+    name := "smithy4hivemq-adapters",
+    libraryDependencies ++= Seq(
+      "com.disneystreaming.smithy4s" %% "smithy4s-http4s-swagger" % smithy4sVersion.value
+    ),
+    Compile / run / fork := true,
+    Compile / run / connectInput := true
+  )
+
 // smithy-files and generated code for some example services
 // (annotated for both http and mqtt)
 lazy val exampleGeneratedServices = (project in file("example-generated-services"))
@@ -105,7 +117,7 @@ lazy val exampleHttp4sServer = (project in file("example-http4s-server"))
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % smithy4sVersion.value,
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s-swagger" % smithy4sVersion.value,
-      "org.http4s" %% "http4s-ember-server" % "0.23.18",
+      "org.http4s" %% "http4s-ember-server" % http4sVersion,
       "ch.qos.logback" % "logback-classic" % logbackVersion
     ),
     Compile / run / fork := true,
@@ -117,6 +129,19 @@ lazy val exampleCombinedServer = (project in file("example-combined-server"))
   .dependsOn(exampleHiveMqServer, exampleHttp4sServer)
   .settings(
     name := "example-combined-server",
+    Compile / run / fork := true,
+    Compile / run / connectInput := true
+  )
+
+lazy val exampleAdapters = (project in file("example-adapters"))
+  .dependsOn(smithy4hivemqAdapters, smithy4hivemqCats, exampleGeneratedServices)
+  .settings(
+    name := "example-combined-server",
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-ember-server" % http4sVersion,
+      "org.http4s" %% "http4s-ember-client" % http4sVersion,
+      "ch.qos.logback" % "logback-classic" % logbackVersion
+    ),
     Compile / run / fork := true,
     Compile / run / connectInput := true
   )
