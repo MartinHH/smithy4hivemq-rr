@@ -2,9 +2,9 @@ package com.example.adapters
 
 import cats.effect.*
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
-import io.gitub.mahh.mqtt.hive.HiveMqCatsResponder
-import io.gitub.mahh.mqtt.hive.adapters.HttpClientAsMqttServer
-import io.gitub.mahh.mqtt.logging.log4cats.loggingFromLog4Cats
+import io.github.martinhh.mqtt.hive.HiveMqCatsResponder
+import io.github.martinhh.mqtt.hive.adapters.HttpClientAsMqttServer
+import io.github.martinhh.mqtt.logging.log4cats.loggingFromLog4Cats
 import org.http4s.Uri
 import org.http4s.ember.client.EmberClientBuilder
 import org.typelevel.log4cats.Logger as Log4CatsLogger

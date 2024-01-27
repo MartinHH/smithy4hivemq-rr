@@ -58,9 +58,7 @@ object Main extends IOApp.Simple {
       host: Hostname = defaultHost
   ): Resource[IO, Server] = {
     val message =
-      s"Server started on: $port:$host, press enter to stop"
-    
-    val builder = defaultServerBuilder(port, host)
+      s"Server started on: $host:$port, press enter to stop"
 
     val server: Resource[IO, Server] =
       for {

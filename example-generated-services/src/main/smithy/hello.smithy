@@ -3,7 +3,7 @@ $version: "2"
 namespace hello
 
 use alloy#simpleRestJson
-use hello.mqtt#mqttRequest
+use io.github.martinhh.mqtt#mqttRequest
 
 @documentation("An example service: returns a greeting message")
 @simpleRestJson

@@ -7,7 +7,6 @@ import hello.CurrentCount
 import hello.DivisionByZero
 import hello.MathOp
 
-
 class CountImpl(count: Ref[IO, Int]) extends CountService[IO] {
   def modify(operator: MathOp, operand: Int): IO[Unit] = operator match {
     case MathOp.DIV if operand == 0 =>

@@ -6,9 +6,9 @@ import com.comcast.ip4s.host
 import com.comcast.ip4s.port
 import com.hivemq.client.mqtt.datatypes.MqttQos
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
-import io.gitub.mahh.mqtt.hive.HiveMqCatsRequestClientBuilder
-import io.gitub.mahh.mqtt.hive.HiveMqRequestClientBuilder
-import io.gitub.mahh.mqtt.hive.adapters.MqttClientAsHttpServer
+import io.github.martinhh.mqtt.hive.HiveMqCatsRequestClientBuilder
+import io.github.martinhh.mqtt.hive.HiveMqRequestClientBuilder
+import io.github.martinhh.mqtt.hive.adapters.MqttClientAsHttpServer
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Server
 import smithy4s.interopcats.monadThrowShim

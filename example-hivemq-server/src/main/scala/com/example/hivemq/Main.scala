@@ -9,11 +9,11 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder
 import hello.CountService
 import hello.HelloWorldService
-import io.gitub.mahh.mqtt.RequestHandlers
-import io.gitub.mahh.mqtt.hive.HiveMqCatsResponder
-import io.gitub.mahh.mqtt.hive.HiveMqRequestServiceBuilder
-import io.gitub.mahh.mqtt.logging.Logger
-import io.gitub.mahh.mqtt.logging.log4cats.loggingFromLog4Cats
+import io.github.martinhh.mqtt.RequestHandlers
+import io.github.martinhh.mqtt.hive.HiveMqCatsResponder
+import io.github.martinhh.mqtt.hive.HiveMqRequestServiceBuilder
+import io.github.martinhh.mqtt.logging.Logger
+import io.github.martinhh.mqtt.logging.log4cats.loggingFromLog4Cats
 import org.typelevel.log4cats.Logger as Log4CatsLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import smithy4s.interopcats.monadThrowShim

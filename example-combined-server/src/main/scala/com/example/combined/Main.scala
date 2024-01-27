@@ -9,7 +9,7 @@ import com.example.http4s.Main as Http4sExample
 import com.example.services.CountImpl
 import com.example.services.HelloWorldImpl
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
-import io.gitub.mahh.mqtt.logging.log4cats.loggingFromLog4Cats
+import io.github.martinhh.mqtt.logging.log4cats.loggingFromLog4Cats
 import org.typelevel.log4cats.Logger as Log4CatsLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
